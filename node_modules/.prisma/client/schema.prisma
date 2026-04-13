@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  fullName     String   @map("full_name")
+  avatarUrl    String?  @map("avatar_url")
+  role         Role     @default(STUDENT)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  coursesCreated Course[]     @relation("InstructorCourses")
+  enrollments    Enrollment[]
+  reviews        Review[]
+  payments       Payment[]
+
+  @@map("users")
+}
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  courses     Course[]
+
+  @@map("categories")
+}
+
+model Course {
+  id            String   @id @default(uuid())
+  title         String
+  slug          String   @unique
+  description   String
+  thumbnailUrl  String?  @map("thumbnail_url")
+  price         Decimal  @db.Decimal(10, 2)
+  discountPrice Decimal? @map("discount_price") @db.Decimal(10, 2)
+  instructorId  String   @map("instructor_id")
+  categoryId    String   @map("category_id")
+  level         Level    @default(BEGINNER)
+  status        Status   @default(DRAFT)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  instructor  User         @relation("InstructorCourses", fields: [instructorId], references: [id])
+  category    Category     @relation(fields: [categoryId], references: [id])
+  lessons     Lesson[]
+  enrollments Enrollment[]
+  reviews     Review[]
+  payments    Payment[]
+
+  @@map("courses")
+}
+
+model Lesson {
+  id         String   @id @default(uuid())
+  courseId   String   @map("course_id")
+  title      String
+  videoUrl   String   @map("video_url")
+  duration   Int
+  orderIndex Int      @map("order_index")
+  isPreview  Boolean  @default(false) @map("is_preview")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@map("lessons")
+}
+
+model Enrollment {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  courseId    String    @map("course_id")
+  enrolledAt  DateTime  @default(now()) @map("enrolled_at")
+  completedAt DateTime? @map("completed_at")
+  progress    Int       @default(0)
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+  @@map("enrollments")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  courseId  String   @map("course_id")
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@unique([userId, courseId])
+  @@map("reviews")
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  userId        String        @map("user_id")
+  courseId      String        @map("course_id")
+  amount        Decimal       @db.Decimal(10, 2)
+  currency      String        @default("USD")
+  paymentMethod String        @map("payment_method")
+  transactionId String?       @map("transaction_id")
+  status        PaymentStatus @default(PENDING)
+  createdAt     DateTime      @default(now()) @map("created_at")
+
+  user   User   @relation(fields: [userId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+
+  @@map("payments")
+}
+
+enum Role {
+  STUDENT
+  INSTRUCTOR
+  ADMIN
+}
+
+enum Level {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum Status {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}

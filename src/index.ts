@@ -1,11 +1,15 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import authRoutes from './routes/authRoutes';
+import courseRoutes from './routes/courseRoutes';
+import categoryRoutes from './routes/categoryRoutes';
+import enrollmentRoutes from './routes/enrollmentRoutes';
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 
 // Middleware
 app.use(cors());
@@ -22,6 +26,11 @@ app.get('/api', (req, res) => {
   res.json({ message: 'Course Platform API v1.0' });
 });
 
+app.use('/api/auth', authRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/enrollments', enrollmentRoutes);
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
@@ -33,6 +42,6 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
 });
